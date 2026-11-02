@@ -1,0 +1,5 @@
+node_modules/
+.openai/local/
+work/trace.mjs
+work/download.cjs
+work/buildtrace.mjs

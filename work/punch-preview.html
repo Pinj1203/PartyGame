@@ -1,0 +1,19 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>揮拳動作檢查</title>
+<style>body{margin:0;background:#dce8df;color:#18392c;font:15px Arial,'Microsoft JhengHei',sans-serif}header{padding:28px 36px}h1{margin:0 0 10px;font-size:26px}p{margin:0;color:#5e7365}button{margin:16px 8px 0 0;padding:10px 15px;border:1px solid #a4b9a7;border-radius:8px;background:#f6f9ee;color:inherit;font:inherit}.frames{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:0 24px}.frame{background:#f4f6eb;border-radius:18px;overflow:hidden}.frame b{display:block;padding:18px 18px 0}canvas{display:block;width:100%;height:400px}.note{padding:24px 36px}#status{color:#356548;margin-top:12px}</style>
+<header><h1>揮拳：收拳 → 出拳 → 跟進 → 回收</h1><p>使用遊戲內同一套兔耳角色與分層動畫。肩膀帶動，另一手護住身體。</p><button id="play">慢速播放</button><button id="alternate">切換左右拳</button><button id="run">切換跑步</button><button id="back">背後視角</button><div id="status">右拳 · 分解姿勢</div></header><div class="frames"></div><p class="note">出拳峰值對齊 0.12 秒命中時機。腿部保留移動／跳躍，手臂保持固定長度。</p>
+<script type="module">
+import * as T from '/three.module.js';import {loadCharacters,createAnimal,animateAnimal,resetAnimal} from '/characters.js';import {resetCombat} from '/combat.js';
+await loadCharacters();const actors=[];let playing=false,serial=1,running=false,t=0,last=performance.now();
+for(const [label,at] of [['01 收拳蓄力',.065],['02 快速出拳',.12],['03 肩膀跟進',.155],['04 回收防守',.27]]){
+ const cell=document.createElement('div');cell.className='frame';cell.innerHTML='<b>'+label+'</b>';document.querySelector('.frames').append(cell);
+ const scene=new T.Scene();scene.background=new T.Color('#f4f6eb');scene.add(new T.HemisphereLight(0xffffff,0x7b8e66,2.6));const light=new T.DirectionalLight(0xffffff,3);light.position.set(2,5,3);scene.add(light);
+ const mesh=createAnimal(0xf58055);scene.add(mesh);const actor={mesh,alive:true,finished:false,x:0,y:0,z:0,vx:0,vy:0,vz:0,ground:{},facing:0};resetCombat(actor);actor.at=at;actors.push(actor);
+ const floor=new T.Mesh(new T.CircleGeometry(2,48),new T.MeshStandardMaterial({color:0xd1dfc5}));floor.rotation.x=-Math.PI/2;floor.position.y=-.02;scene.add(floor);
+ const renderer=new T.WebGLRenderer({antialias:true});cell.append(renderer.domElement);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(cell.clientWidth,400);
+ const camera=new T.PerspectiveCamera(35,cell.clientWidth/400,.01,30);camera.position.set(2.8,1.8,3.7);camera.lookAt(0,.9,0);Object.assign(actor,{renderer,scene,camera});
+}
+const status=()=>document.querySelector('#status').textContent=(serial%2?'右拳':'左拳')+' · '+(playing?'慢速播放':'分解姿勢')+(running?' · 跑步分層':'');
+document.querySelector('#play').onclick=()=>{playing=!playing;t=0;status();};document.querySelector('#alternate').onclick=()=>{serial++;status();};document.querySelector('#run').onclick=()=>{running=!running;for(const a of actors)resetAnimal(a.mesh);status();};
+document.querySelector('#back').onclick=()=>{for(const a of actors){a.camera.position.set(-4.5,1.9,0);a.camera.lookAt(0,.9,0);}};
+function frame(now){const dt=Math.min(.033,(now-last)/1000);last=now;t=(t+dt*.45)%.8;for(const a of actors){a.punchSerial=serial;a.vx=running?4:0;a.punchTime=playing?(t<.4?t:-1):a.at;animateAnimal(a,dt);a.renderer.render(a.scene,a.camera);}requestAnimationFrame(frame);}requestAnimationFrame(frame);
+</script></html>

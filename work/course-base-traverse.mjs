@@ -1,0 +1,2 @@
+import {run} from './harness.mjs';
+run(`clean();makeMap();resetPlayers(6);expert=true;phase='race';raceTime=0;course.hit=()=>{};course.avoid=(p,i)=>i;console.log('fixed',surfaces.length,'route',route(surfaces[0],players[1]).map(s=>[s.id,s.x,s.z,s.y]));for(let i=0;i<MAP.raceSeconds*60;i++){raceTime+=1/60;for(const p of players)if(p.alive&&!p.finished){move(p,1/60,bot(p,1/60));updateCombat([p],1/60);}}console.log(players.map(p=>({x:p.x,y:p.y,z:p.z,ground:p.ground?.id,alive:p.alive,finished:p.finished,plan:p.plan.map(s=>s.id)})));`);

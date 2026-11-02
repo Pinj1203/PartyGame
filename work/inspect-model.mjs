@@ -1,0 +1,10 @@
+import fs from 'node:fs/promises';
+import * as T from '../dist/three.module.js';
+import {GLTFLoader} from '../dist/vendor/loaders/GLTFLoader.js';
+globalThis.ProgressEvent=class {constructor(type,args){Object.assign(this,args);}};
+const model=await new GLTFLoader().parseAsync(await fs.readFile(new URL('../dist/assets/characters/bunny.gltf',import.meta.url),'utf8'),'');
+model.scene.updateMatrixWorld(true);
+console.log('Bounds',new T.Box3().setFromObject(model.scene).getSize(new T.Vector3()).toArray());
+console.log('Clips',model.animations.map(a=>[a.name,a.duration]));
+model.scene.traverse(o=>{if(o.isBone)console.log(o.name,o.getWorldPosition(new T.Vector3()).toArray().map(v=>+v.toFixed(3)));});
+console.log('Materials');model.scene.traverse(o=>{if(o.isMesh)console.log(o.name,o.material.name,o.material.color.getHexString());});

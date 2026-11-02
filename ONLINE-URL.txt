@@ -1,0 +1,4 @@
+https://mathematics-loading-general-serve.trycloudflare.com/
+
+這是暫時網址。請保持遊戲伺服器、外網連線與電腦開啟；房主也要保持遊戲頁面開啟。
+網址失效時，雙擊 start-online.cmd 取得新網址，再分享給朋友。

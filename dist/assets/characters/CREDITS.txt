@@ -1,0 +1,27 @@
+SKYBUILD character asset
+=======================
+Author: Quaternius
+Asset pack: Ultimate Platformer Pack / Platformer Game Kit (December 2021)
+Source: https://quaternius.com/packs/ultimateplatformer.html
+Official download: https://quaternius.itch.io/ultimate-platformer-pack
+Downloaded: 2026-10-20
+Original file: Ultimate Platformer Pack - Dec 2021/Character/glTF/Character.gltf
+Local file: bunny.gltf (original glTF data, unchanged)
+
+License: Creative Commons Zero v1.0 Universal (CC0 1.0).
+The author's pack page and itch.io page explicitly mark this pack CC0 and
+allow use in commercial projects. No attribution or royalties required.
+License: https://creativecommons.org/publicdomain/zero/1.0/
+Legal text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Runtime modifications in SKYBUILD:
+- Per-player colors, scale, facing and matte material settings.
+- Animation blending for idle, run, jumping, punching and being hit.
+- Spring-driven additive body/head/ear motion and landing compression.
+
+Three.js GLTFLoader, SkeletonUtils and BufferGeometryUtils are vendored
+from three@0.170.0 under MIT, with local import paths adjusted.
+See ../../THREE-LICENSE.txt.
+
+Party Animals is a style/feel reference only. This project does not use
+Party Animals models, animations, textures or proprietary game code.

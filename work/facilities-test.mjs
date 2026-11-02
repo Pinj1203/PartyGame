@@ -1,0 +1,56 @@
+import {run} from './harness.mjs';
+run(`
+ $('count').value='6';$('difficulty').value='expert';start();
+ assert(surfaces.length>=2&&surfaces.length<=3);assert.equal(facilities.facilities.length,0);
+ assert.equal(TYPES.length,14);
+ for(const type of FACILITY_TYPES){
+  assert(selection.some(s=>s.type===type),'round guarantees '+type);
+  claim(players[0],selection.findIndex(s=>s.type===type));
+  for(const p of players.slice(1))aiPick(p);
+  assert.equal(phase,'build');assert.equal(ghost.userData.facility.type,type);
+  aim={x:20+(round-1)*12,y:12,z:30};placementYaw=Math.PI/2;
+  const n=surfaces.length,floors=surfaces.filter(s=>s.type==='platform').length;
+  placeHuman();assert.equal(placed,true);assert.equal(surfaces.length,n+1);
+  const added=surfaces.at(-1);assert.equal(added.type,type);assert.equal(added.angle,Math.PI/2);
+  assert.equal(surfaces.filter(s=>s.type==='platform').length,floors,'placing a mechanism adds no floor');
+  const suggested=suggestFacility(type);assert(legal(suggested,type,0),'AI can suggest a legal place for '+type);
+  const f=facilities.facilities.at(-1);assert.equal(f.surface,added);
+  beginRound();assert(surfaces.includes(added),'placed mechanism persists next round');
+ }
+ clean();facilities=new PlaceableFacilities({world,updateSolidBounds,collision:collisionWorld,surfaces:()=>surfaces,supportAt});
+ addSurface('platform',0,0,0,0,14,18,true);addSurface('platform',108,0,12,0,14,20,true);addSurface('platform',216,0,24,0,18,24,true);resetPlayers(6);phase='race';practiceMode=false;
+ const pad=addSurface('platform',60,25,6,0,40,32,true);
+ const spin=addSurface('spinner',50,25,6.08,Math.PI/2);spin.offset=0;
+ const pend=addSurface('pendulum',62,25,6.08,Math.PI/2);pend.offset=0;
+ const gun=addSurface('boulder',72,25,6.08,Math.PI/2);gun.offset=0;
+ facilities.reset();const [sf,pf,gf]=facilities.facilities;
+ assert.equal(supportAt(spin,spin.x+3.5,spin.z+3.5),null,'no floor inside the spinner envelope');
+ assert.equal(supportAt(pend,pend.x+2,pend.z+.7),null,'no floor below the pendulum swing');
+ const p=players[1];players.forEach(q=>q.alive=q===p);
+ function position(x,y,z){resetCombat(p);Object.assign(p,{alive:true,finished:false,x,y,z,vx:0,vz:0,vy:0,ground:pad});p.mesh.position.set(x,y,z);p.mesh.updateMatrixWorld(true);}
+ position(50,6.08,23);facilities.hit(p,hitHazard,hitMechanism);assert(!isDown(p)&&Math.hypot(p.impulseX,p.impulseZ)>0,'gentle rotated bar contact pushes without knockdown');
+ position(50,8.1,23);facilities.hit(p,hitHazard,hitMechanism);assert(!isDown(p),'jumping above the bar clears it');
+ facilities.previousClock=facilities.clock=0;position(62,6.08,25);facilities.hit(p,hitHazard,hitMechanism);assert(isDown(p)&&p.alive&&p.hitSerial>0,'fast bottom pendulum strike knocks down');
+ const moving=facilities.pendulumPoint(pf,Math.PI/6);assert(moving.x>pend.x+2&&Math.abs(moving.z-pend.z)<.001,'R rotates the pendulum swing plane');
+ const collisionPoint=new T.Vector3(pend.x+3.15,pend.y+1,pend.z+.1);
+ assert(!collisionWorld.sphere(collisionPoint,.3).some(h=>h.surface===pend),'removed pendulum supports leave no invisible collisions');
+ assert(pend.mesh.getObjectByName('pendulum-axle'));assert(pend.mesh.getObjectByName('pendulum-hammer-head'),'pendulum has an axle and hammer-shaped head');
+ assert.equal(sf.radius,4.2);assert.equal(sf.speed,1.55);
+ for(let i=1;i<=Math.ceil((gf.interval+.3)*60);i++)facilities.step(1/60,i/60);
+ assert.equal(facilities.rocks.length,1,'one timed shot');const rock=facilities.rocks[0];
+ assert(Math.abs(rock.mesh.position.x-gun.x)<.01&&rock.mesh.position.z<gun.z-3,'R rotates the boulder launch direction');
+ assert(rock.mesh.position.y>=6.74,'boulder collides with the player-placed floor');
+ position(rock.mesh.position.x,rock.mesh.position.y-.8,rock.mesh.position.z);facilities.hit(p,hitHazard,hitMechanism);assert(isDown(p)&&p.alive,'boulder applies knockdown');
+ const data=facilities.snapshot(),clock=facilities.clock;
+ assert.deepEqual(networkSnapshot().facilityRocks,data);facilities.reset();facilities.receive(data,clock);
+ assert.deepEqual(facilities.snapshot(),data,'guest receives full world-space rock rotation and position');
+ assert.equal(sf.pivot.rotation.y,clock*sf.speed+spin.offset,'guest shares the host mechanism phase');
+ facilities.receive([],clock);assert.equal(facilities.rocks.length,0);
+ clean();addSurface('platform',0,0,0,0,14,18,true);resetPlayers(6);facilities=new PlaceableFacilities({world,updateSolidBounds,collision:collisionWorld,surfaces:()=>surfaces,supportAt});
+ addSurface('platform',22.5,30,11,0,1,1);
+ assert(legal({x:20,y:10,z:30},'pendulum',0));
+ assert(!legal({x:20,y:10,z:30},'pendulum',Math.PI/2),'rotated sweep volume prevents overlapping construction');
+ const s=addSurface('spinner',30,30,8);s.offset=0;facilities.pose(0);
+ assert(!legal({x:30,y:8.5,z:32.5},'platform',0),'sweep is reserved even when bar points away');
+ console.log('PASS: rotating draft offers, independent props without floors, free placement/rotation, AI suggestions, persistence, swept clearance, ragdoll impacts, rotated boulders and synchronized poses');
+`);

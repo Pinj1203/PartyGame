@@ -1,0 +1,26 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>頭肩局部關節物理檢查</title>
+<style>body{margin:0;background:#dce8df;color:#18392c;font:15px Arial,'Microsoft JhengHei',sans-serif}header{padding:28px 32px}h1{margin:0 0 10px;font-size:26px}p{margin:0;color:#5e7365;line-height:1.7}button{margin:16px 8px 0 0;padding:10px 15px;border:1px solid #a4b9a7;border-radius:8px;background:#f6f9ee;color:inherit;font:inherit}.frames{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:0 24px}.frame{background:#f4f6eb;border-radius:18px;overflow:hidden}.frame b{display:block;padding:18px 18px 0}.frame small{display:block;color:#637865;padding:8px 18px}canvas{display:block;width:100%;height:390px}.note{padding:24px 32px}#status{color:#356548;margin-top:12px}</style>
+<header><h1>局部關節慣性 · 頭與肩膀的轉向／急停晃動</h1><p>轉向時頭肩稍微落後；急停時向前晃，再自然回彈。腰胸、步伐與戰鬥維持原本動作。</p><button id="play">播放轉向與回彈</button><button id="pose">查看慣性瞬間</button><button id="scenario">切換急停測試</button><div id="status">轉向瞬間 · 動作分層比較</div></header><div class="frames"></div><p class="note">① 關閉慣性　② 頭部與肩關節的小幅慣性　③ 出拳沿角色方向　④ 雙手穩定抓取</p>
+<script type="module">
+import * as T from '/three.module.js';import {loadCharacters,createAnimal,animateAnimal,resetAnimal} from '/characters.js';import {resetCombat,COMBAT} from '/combat.js';
+await loadCharacters();const actors=[];let playing=false,scenario='turn',t=0,last=performance.now();
+for(const [mode,title,note] of [['base','01 關閉慣性（對照）','對照：整個上半身同步轉動'],['sway','02 頭肩慣性加強','轉向落後、急停前晃，腰胸穩定'],['punch','03 轉向時出拳','出拳優先，保持原本的拳路'],['grab','04 轉向時抓人','抓取優先，雙手穩定向前']]){
+ const cell=document.createElement('div');cell.className='frame';cell.innerHTML='<b>'+title+'</b><small>'+note+'</small>';document.querySelector('.frames').append(cell);
+ const scene=new T.Scene();scene.background=new T.Color('#f4f6eb');scene.add(new T.HemisphereLight(0xffffff,0x7b8e66,2.6));const light=new T.DirectionalLight(0xffffff,3);light.position.set(2,5,3);scene.add(light);
+ const mesh=createAnimal(0xf58055);scene.add(mesh);const actor={mesh,mode,alive:true,finished:false,x:0,y:0,z:0,vx:4,vy:0,vz:0,ground:{},facing:0};resetCombat(actor);actors.push(actor);
+ const floor=new T.Mesh(new T.CircleGeometry(2,48),new T.MeshStandardMaterial({color:0xd1dfc5}));floor.rotation.x=-Math.PI/2;floor.position.y=-.02;scene.add(floor);
+ const renderer=new T.WebGLRenderer({antialias:true});cell.append(renderer.domElement);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(cell.clientWidth,390);
+ const camera=new T.PerspectiveCamera(35,cell.clientWidth/390,.01,30);camera.position.set(-3.6,2.0,4.0);camera.lookAt(0,.95,0);Object.assign(actor,{renderer,scene,camera});
+}
+function pose(a,dt,time){
+ const phase=time%2.8,heading=scenario==='stop'?Math.PI/2:phase<1.4?Math.PI/2*(1-Math.exp(-30*Math.max(0,phase-.1))):Math.PI/2*Math.exp(-30*(phase-1.4));
+ const speed=scenario==='stop'?(phase<.65?7:0):4;
+ a.facing=heading;a.mesh.rotation.y=-heading;a.vx=speed*Math.cos(heading);a.vz=speed*Math.sin(heading);
+ if(a.mode==='base')a.mesh.userData.animal.secondaryMotion.reset();
+ a.punchSerial=1;a.punchTime=a.mode==='punch'?(playing?((time+.02)%.8<COMBAT.duration?(time+.02)%.8:-1):COMBAT.windup):-1;
+ a.grabIntent=a.mode==='grab';animateAnimal(a,dt);
+}
+function still(){playing=false;for(const a of actors){resetAnimal(a.mesh);a.mesh.userData.animal.mixer.setTime(0);for(let i=0;i<=(scenario==='stop'?96:39);i++)pose(a,1/120,i/120);}document.querySelector('#status').textContent=(scenario==='stop'?'急停後 0.15 秒':'轉向瞬間')+' · 動作分層比較';}
+document.querySelector('#play').onclick=()=>{playing=!playing;t=0;for(const a of actors)resetAnimal(a.mesh);document.querySelector('#status').textContent=playing?(scenario==='stop'?'持續播放 · 跑動／急停／回彈':'持續播放 · 左右轉向／停止回彈'):'暫停畫面';};document.querySelector('#pose').onclick=still;document.querySelector('#scenario').onclick=()=>{scenario=scenario==='turn'?'stop':'turn';document.querySelector('#scenario').textContent=scenario==='stop'?'切換轉向測試':'切換急停測試';still();};
+still();function frame(now){const dt=Math.min(.033,(now-last)/1000);last=now;if(playing)t+=dt;for(const a of actors){if(playing)pose(a,dt,t);a.renderer.render(a.scene,a.camera);}requestAnimationFrame(frame);}requestAnimationFrame(frame);
+</script></html>

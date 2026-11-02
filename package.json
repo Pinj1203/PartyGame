@@ -1,0 +1,14 @@
+{
+  "name": "skybuild-party",
+  "private": true,
+  "version": "0.2.0",
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node work/test.mjs && node work/network-test.mjs",
+    "online": "node start-online.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module"
+}
